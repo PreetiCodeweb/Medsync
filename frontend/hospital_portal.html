@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedSync - Hospital Management Portal</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="portal-container">
+        <header class="portal-header">
+            <div class="header-content">
+                <h1>🏥 MedSync - Hospital Management</h1>
+                <button id="logoutBtn" class="btn btn-secondary">Logout</button>
+            </div>
+        </header>
+
+        <main class="portal-main">
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="hospitals">Hospitals</button>
+                <button class="tab-btn" data-tab="doctors">Doctors</button>
+                <button class="tab-btn" data-tab="departments">Departments</button>
+            </div>
+
+            <!-- Hospitals Tab -->
+            <div id="hospitals-tab" class="tab-content active">
+                <div class="section-header">
+                    <h2>Manage Hospitals</h2>
+                    <button id="addHospitalBtn" class="btn btn-primary">+ Add Hospital</button>
+                </div>
+                <div id="hospitalsManagementList" class="management-list">
+                    <!-- Hospitals will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Doctors Tab -->
+            <div id="doctors-tab" class="tab-content">
+                <div class="section-header">
+                    <h2>Manage Doctors</h2>
+                    <button id="addDoctorBtn" class="btn btn-primary">+ Add Doctor</button>
+                </div>
+                <div id="doctorsManagementList" class="management-list">
+                    <!-- Doctors will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Departments Tab -->
+            <div id="departments-tab" class="tab-content">
+                <div class="section-header">
+                    <h2>Manage Departments</h2>
+                    <button id="addDepartmentBtn" class="btn btn-primary">+ Add Department</button>
+                </div>
+                <div id="departmentsManagementList" class="management-list">
+                    <!-- Departments will be loaded here -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Hospital Form Modal -->
+    <div id="hospitalModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="hospitalModalTitle">Add Hospital</h2>
+            <form id="hospitalForm">
+                <input type="hidden" id="hospitalId">
+                <div class="form-group">
+                    <label for="hospitalName">Hospital Name</label>
+                    <input type="text" id="hospitalName" required>
+                </div>
+                <div class="form-group">
+                    <label for="hospitalAddress">Address</label>
+                    <input type="text" id="hospitalAddress" required>
+                </div>
+                <div class="form-group">
+                    <label for="hospitalPhone">Phone</label>
+                    <input type="tel" id="hospitalPhone" required>
+                </div>
+                <div class="form-group">
+                    <label for="hospitalLat">Latitude</label>
+                    <input type="number" step="any" id="hospitalLat" required>
+                </div>
+                <div class="form-group">
+                    <label for="hospitalLng">Longitude</label>
+                    <input type="number" step="any" id="hospitalLng" required>
+                </div>
+                <div class="form-group">
+                    <label for="emergencyBeds">Emergency Beds</label>
+                    <input type="number" id="emergencyBeds" required>
+                </div>
+                <div class="form-group">
+                    <label for="icuBeds">ICU Beds</label>
+                    <input type="number" id="icuBeds" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Save Hospital</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Doctor Form Modal -->
+    <div id="doctorModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="doctorModalTitle">Add Doctor</h2>
+            <form id="doctorForm">
+                <input type="hidden" id="doctorId">
+                <div class="form-group">
+                    <label for="doctorHospital">Hospital</label>
+                    <select id="doctorHospital" required>
+                        <!-- Options will be loaded dynamically -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="doctorName">Doctor Name</label>
+                    <input type="text" id="doctorName" required>
+                </div>
+                <div class="form-group">
+                    <label for="doctorDepartment">Department</label>
+                    <input type="text" id="doctorDepartment" required>
+                </div>
+                <div class="form-group">
+                    <label for="doctorSpecialization">Specialization</label>
+                    <input type="text" id="doctorSpecialization" required>
+                </div>
+                <div class="form-group">
+                    <label for="doctorPhone">Phone</label>
+                    <input type="tel" id="doctorPhone" required>
+                </div>
+                <div class="form-group">
+                    <label for="doctorAvailable">Available</label>
+                    <input type="checkbox" id="doctorAvailable" checked>
+                </div>
+                <button type="submit" class="btn btn-primary">Save Doctor</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Department Form Modal -->
+    <div id="departmentModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="departmentModalTitle">Add Department</h2>
+            <form id="departmentForm">
+                <input type="hidden" id="departmentId">
+                <div class="form-group">
+                    <label for="departmentHospital">Hospital</label>
+                    <select id="departmentHospital" required>
+                        <!-- Options will be loaded dynamically -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="departmentName">Department Name</label>
+                    <input type="text" id="departmentName" required>
+                </div>
+                <div class="form-group">
+                    <label for="departmentDescription">Description</label>
+                    <textarea id="departmentDescription" required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Save Department</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

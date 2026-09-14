@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedSync - Hospital Management System</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-box">
+            <div class="logo">
+                <h1>🏥 MedSync</h1>
+                <p>AI-Powered Hospital Management</p>
+            </div>
+            
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" required placeholder="Enter your email">
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required placeholder="Enter your password">
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Login</button>
+            </form>
+            
+            <div class="demo-credentials">
+                <h3>Demo Credentials</h3>
+                <div class="credential-box">
+                    <p><strong>User Portal:</strong></p>
+                    <p>Email: user@medsync.com</p>
+                    <p>Password: user123</p>
+                </div>
+                <div class="credential-box">
+                    <p><strong>Hospital Portal:</strong></p>
+                    <p>Email: hospital@medsync.com</p>
+                    <p>Password: hospital123</p>
+                </div>
+            </div>
+            
+            <div id="errorMessage" class="error-message"></div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedSync - User Portal</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="portal-container">
+        <header class="portal-header">
+            <div class="header-content">
+                <h1>🏥 MedSync</h1>
+                <div class="header-actions">
+                    <button id="ambulanceBtn" class="btn btn-emergency">🚨 Ambulance</button>
+                    <button id="logoutBtn" class="btn btn-secondary">Logout</button>
+                </div>
+            </div>
+        </header>
+
+        <main class="portal-main">
+            <section class="search-section">
+                <h2>Find Nearby Hospitals</h2>
+                <div class="search-bar">
+                    <input type="text" id="locationInput" placeholder="Enter your location or allow GPS">
+                    <button id="searchBtn" class="btn btn-primary">Search</button>
+                    <button id="gpsBtn" class="btn btn-secondary">📍 Use GPS</button>
+                </div>
+            </section>
+
+            <section class="hospitals-section">
+                <h2>Nearby Hospitals</h2>
+                <div id="hospitalsList" class="hospitals-grid">
+                    <!-- Hospitals will be loaded here -->
+                </div>
+            </section>
+
+            <section class="ai-section">
+                <h2>AI Symptom Analysis</h2>
+                <div class="ai-container">
+                    <div class="voice-input">
+                        <button id="voiceBtn" class="btn btn-voice">🎤 Describe Your Symptoms</button>
+                        <p id="voiceStatus">Click to start voice input</p>
+                    </div>
+                    <div class="text-input">
+                        <textarea id="symptomText" placeholder="Or type your symptoms here..."></textarea>
+                        <button id="analyzeBtn" class="btn btn-primary">Analyze Symptoms</button>
+                    </div>
+                    <div id="aiResult" class="ai-result hidden">
+                        <!-- AI analysis results will appear here -->
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Hospital Details Modal -->
+    <div id="hospitalModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div id="hospitalDetails">
+                <!-- Hospital details will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
