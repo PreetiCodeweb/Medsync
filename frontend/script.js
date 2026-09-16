@@ -12,6 +12,7 @@ const errorMessage = document.getElementById('errorMessage');
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('MedSync frontend loaded');
     checkAuth();
     setupEventListeners();
 });

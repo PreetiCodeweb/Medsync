@@ -6,7 +6,7 @@ import logging
 import sys
 from contextlib import asynccontextmanager
 from typing import Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import sqlite3
 import json
 
@@ -300,7 +300,7 @@ class HealthResponse(BaseModel):
 def create_access_token(data: dict):
     """Create JWT access token"""
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     from jose import jwt
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
@@ -355,17 +355,19 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=600,
 )
 
 # Request logging middleware
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     """Log all requests with timing"""
-    start_time = datetime.utcnow()
+    start_time = datetime.now(timezone.utc)
     
     response = await call_next(request)
     
-    duration = (datetime.utcnow() - start_time).total_seconds()
+    duration = (datetime.now(timezone.utc) - start_time).total_seconds()
     http_request_duration_seconds.observe(duration)
     http_requests_total.labels(
         method=request.method,
@@ -386,7 +388,16 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     logger.error(f"HTTP error: {exc.status_code} - {exc.detail}")
     return JSONResponse(
         status_code=exc.status_code,
-        content={"detail": exc.detail, "timestamp": datetime.utcnow().isoformat()}
+        content={"detail": exc.detail, "timestamp": datetime.now(timezone.utc).isoformat()}
+    )
+
+# Handle OPTIONS requests for CORS preflight
+@app.options("/api/{path:path}")
+async def handle_options(request: Request):
+    """Handle CORS preflight requests"""
+    return JSONResponse(
+        status_code=200,
+        content={"status": "ok"}
     )
 
 @app.exception_handler(Exception)
@@ -395,7 +406,7 @@ async def general_exception_handler(request: Request, exc: Exception):
     logger.error(f"Unhandled exception: {str(exc)}", exc_info=True)
     return JSONResponse(
         status_code=500,
-        content={"detail": "Internal server error", "timestamp": datetime.utcnow().isoformat()}
+        content={"detail": "Internal server error", "timestamp": datetime.now(timezone.utc).isoformat()}
     )
 
 # Health and system endpoints
@@ -428,7 +439,7 @@ def health():
         status="healthy" if db_connected else "unhealthy",
         service=settings.APP_NAME,
         version=settings.APP_VERSION,
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(timezone.utc),
         rag_enabled=settings.ENABLE_RAG,
         database_connected=db_connected
     )
@@ -477,7 +488,7 @@ def login(request: LoginRequest):
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute('UPDATE users SET last_login = ? WHERE id = ?', 
-                      (datetime.utcnow().isoformat(), user['id']))
+                      (datetime.now(timezone.utc).isoformat(), user['id']))
         conn.commit()
         conn.close()
         
@@ -629,7 +640,7 @@ def update_hospital(hospital_id: int, hospital: HospitalCreate, current_user: di
             emergency_beds=?, icu_beds=?, total_beds=?, updated_at=? WHERE id=?
         ''', (hospital.name, hospital.address, hospital.phone, hospital.email, 
               hospital.latitude, hospital.longitude, hospital.emergency_beds, 
-              hospital.icu_beds, hospital.total_beds, datetime.utcnow().isoformat(), hospital_id))
+              hospital.icu_beds, hospital.total_beds, datetime.now(timezone.utc).isoformat(), hospital_id))
         conn.commit()
         conn.close()
         
@@ -680,7 +691,7 @@ def update_doctor(doctor_id: int, doctor: DoctorCreate, current_user: dict = Dep
             phone=?, email=?, available=?, license_number=?, updated_at=? WHERE id=?
         ''', (doctor.hospital_id, doctor.name, doctor.department, doctor.specialization, 
               doctor.phone, doctor.email, doctor.available, doctor.license_number, 
-              datetime.utcnow().isoformat(), doctor_id))
+              datetime.now(timezone.utc).isoformat(), doctor_id))
         conn.commit()
         conn.close()
         

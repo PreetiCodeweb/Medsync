@@ -6,6 +6,7 @@ from pydantic_settings import BaseSettings
 from pydantic import Field, validator
 from typing import Optional
 import os
+from datetime import datetime, timezone
 
 
 class Settings(BaseSettings):
