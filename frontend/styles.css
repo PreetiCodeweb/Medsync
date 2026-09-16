@@ -374,6 +374,123 @@ body {
     margin: 10px 0;
 }
 
+.ai-options {
+    margin: 10px 0;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.ai-options label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    color: #555;
+}
+
+.ai-options input[type="checkbox"] {
+    width: auto;
+}
+
+.analysis-meta {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.rag-badge {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.85em;
+    font-weight: 600;
+}
+
+.rag-enabled {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.rag-disabled {
+    background: #fff3e0;
+    color: #f57c00;
+}
+
+.confidence-score {
+    padding: 5px 12px;
+    background: #f3e5f5;
+    color: #7b1fa2;
+    border-radius: 20px;
+    font-size: 0.85em;
+    font-weight: 600;
+}
+
+.analysis-section {
+    margin: 15px 0;
+    padding: 15px;
+    background: white;
+    border-radius: 8px;
+}
+
+.analysis-section h4 {
+    color: #667eea;
+    margin-bottom: 10px;
+    font-size: 1em;
+}
+
+.category-tag {
+    font-size: 0.9em;
+    color: #666;
+    font-style: italic;
+}
+
+.rag-sources {
+    background: #e8f5e9;
+    border-left: 4px solid #4caf50;
+}
+
+/* RAG Info Section */
+.rag-info-section {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.rag-info-section h2 {
+    color: #333;
+    margin-bottom: 20px;
+}
+
+.rag-info {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+.rag-info p {
+    color: #555;
+    margin-bottom: 15px;
+    line-height: 1.6;
+}
+
+.rag-info ul {
+    list-style: none;
+    padding: 0;
+}
+
+.rag-info li {
+    padding: 10px 0;
+    color: #333;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.rag-info li:last-child {
+    border-bottom: none;
+}
+
 .ai-result .severity-high {
     color: #c62828;
     font-weight: 600;

@@ -351,11 +351,18 @@ function handleVoiceInput() {
 
 async function handleSymptomAnalysis() {
     const symptoms = document.getElementById('symptomText').value;
+    const useRag = document.getElementById('useRag').checked;
     
     if (!symptoms.trim()) {
         alert('Please describe your symptoms first');
         return;
     }
+    
+    // Show loading state
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const originalText = analyzeBtn.textContent;
+    analyzeBtn.textContent = 'Analyzing...';
+    analyzeBtn.disabled = true;
     
     try {
         const response = await fetch(`${API_BASE_URL}/api/ai/symptom-analysis`, {
@@ -365,7 +372,8 @@ async function handleSymptomAnalysis() {
             },
             body: JSON.stringify({ 
                 symptoms: symptoms,
-                user_location: currentLocation 
+                user_location: currentLocation,
+                include_rag: useRag
             })
         });
         
@@ -374,16 +382,53 @@ async function handleSymptomAnalysis() {
         const aiResultDiv = document.getElementById('aiResult');
         aiResultDiv.classList.remove('hidden');
         
-        aiResultDiv.innerHTML = `
+        // Build enhanced results display
+        let resultsHTML = `
             <h3>🤖 AI Analysis Results</h3>
-            <p><strong>Possible Conditions:</strong> ${result.possible_conditions.join(', ')}</p>
-            <p><strong>Recommended Department:</strong> ${result.recommended_department}</p>
-            <p><strong>Severity:</strong> <span class="severity-${result.severity}">${result.severity.toUpperCase()}</span></p>
-            <p><strong>Recommendation:</strong> ${result.recommendation}</p>
+            <div class="analysis-meta">
+                <span class="rag-badge ${result.rag_enabled ? 'rag-enabled' : 'rag-disabled'}">
+                    ${result.rag_enabled ? '🧠 RAG-Powered' : '⚠️ Fallback Analysis'}
+                </span>
+                ${result.confidence ? `<span class="confidence-score">Confidence: ${(result.confidence * 100).toFixed(1)}%</span>` : ''}
+            </div>
+            <div class="analysis-section">
+                <h4>Possible Conditions</h4>
+                <p>${result.possible_conditions.join(', ')}</p>
+            </div>
+            <div class="analysis-section">
+                <h4>Recommended Department</h4>
+                <p><strong>${result.recommended_department}</strong></p>
+                ${result.category ? `<p class="category-tag">Category: ${result.category}</p>` : ''}
+            </div>
+            <div class="analysis-section">
+                <h4>Severity Assessment</h4>
+                <p class="severity-${result.severity}">${result.severity.toUpperCase()}</p>
+            </div>
+            <div class="analysis-section">
+                <h4>Recommendation</h4>
+                <p>${result.recommendation}</p>
+            </div>
         `;
+        
+        // Add RAG-specific information if available
+        if (result.rag_enabled && result.sources) {
+            resultsHTML += `
+                <div class="analysis-section rag-sources">
+                    <h4>📚 Knowledge Base Sources</h4>
+                    <p>This analysis is based on ${result.sources.length} medical documents from our knowledge base.</p>
+                </div>
+            `;
+        }
+        
+        aiResultDiv.innerHTML = resultsHTML;
+        
     } catch (error) {
         console.error('Error analyzing symptoms:', error);
         alert('Error analyzing symptoms. Please try again.');
+    } finally {
+        // Reset button state
+        analyzeBtn.textContent = originalText;
+        analyzeBtn.disabled = false;
     }
 }
 

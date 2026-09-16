@@ -36,7 +36,7 @@
             </section>
 
             <section class="ai-section">
-                <h2>AI Symptom Analysis</h2>
+                <h2>AI Symptom Analysis (RAG-Powered)</h2>
                 <div class="ai-container">
                     <div class="voice-input">
                         <button id="voiceBtn" class="btn btn-voice">🎤 Describe Your Symptoms</button>
@@ -44,11 +44,31 @@
                     </div>
                     <div class="text-input">
                         <textarea id="symptomText" placeholder="Or type your symptoms here..."></textarea>
+                        <div class="ai-options">
+                            <label>
+                                <input type="checkbox" id="useRag" checked>
+                                Use RAG System (Recommended)
+                            </label>
+                        </div>
                         <button id="analyzeBtn" class="btn btn-primary">Analyze Symptoms</button>
                     </div>
                     <div id="aiResult" class="ai-result hidden">
                         <!-- AI analysis results will appear here -->
                     </div>
+                </div>
+            </section>
+            
+            <section class="rag-info-section">
+                <h2>🧠 About Our RAG System</h2>
+                <div class="rag-info">
+                    <p>Our <strong>Retrieval-Augmented Generation (RAG)</strong> system uses advanced AI to provide accurate medical insights:</p>
+                    <ul>
+                        <li>📚 <strong>Vector Database:</strong> Searches through comprehensive medical knowledge base</li>
+                        <li>🎯 <strong>Semantic Search:</strong> Understands context and meaning, not just keywords</li>
+                        <li>🔬 <strong>Evidence-Based:</strong> Provides analysis backed by medical literature</li>
+                        <li>⚡ <strong>Real-Time:</strong> Instant analysis with confidence scores</li>
+                        <li>🏥 <strong>Department Matching:</strong> Intelligently recommends appropriate medical specialists</li>
+                    </ul>
                 </div>
             </section>
         </main>
