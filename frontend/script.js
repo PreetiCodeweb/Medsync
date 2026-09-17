@@ -8,7 +8,9 @@ let currentLocation = null;
 
 // DOM Elements
 const loginForm = document.getElementById('loginForm');
+const registerForm = document.getElementById('registerForm');
 const errorMessage = document.getElementById('errorMessage');
+const registerMessage = document.getElementById('registerMessage');
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', function() {
@@ -34,10 +36,120 @@ function checkAuth() {
     }
 }
 
+// Modal functions
+function openModal(modalId) {
+    document.getElementById(modalId).classList.remove('hidden');
+}
+
+function closeModal() {
+    document.querySelectorAll('.modal').forEach(modal => modal.classList.add('hidden'));
+}
+
+// Registration handler
+async function handleRegister(e) {
+    e.preventDefault();
+    
+    const email = document.getElementById('regEmail').value;
+    const password = document.getElementById('regPassword').value;
+    const confirmPassword = document.getElementById('regConfirmPassword').value;
+    const role = document.getElementById('regRole').value;
+    
+    if (password !== confirmPassword) {
+        showRegisterError('Passwords do not match');
+        return;
+    }
+    
+    if (password.length < 6) {
+        showRegisterError('Password must be at least 6 characters');
+        return;
+    }
+    
+    try {
+        // For now, we'll use the existing login endpoint with demo users
+        // In production, this would call a registration endpoint
+        console.log('Registration request for:', email, 'as', role);
+        
+        // For demo purposes, we'll show a message that registration is handled by admins
+        showRegisterError('Registration is currently handled by hospital administrators. Please contact your hospital for account setup.');
+        
+    } catch (error) {
+        console.error('Registration error:', error);
+        showRegisterError('Network error. Please try again.');
+    }
+}
+
+function showRegisterError(message) {
+    if (registerMessage) {
+        registerMessage.textContent = message;
+        registerMessage.style.display = 'block';
+        setTimeout(() => {
+            registerMessage.style.display = 'none';
+        }, 5000);
+    }
+}
+
 function setupEventListeners() {
-    // Login form
+    // Landing page buttons
+    const loginBtn = document.getElementById('loginBtn');
+    const registerBtn = document.getElementById('registerBtn');
+    const heroLoginBtn = document.getElementById('heroLoginBtn');
+    const ctaLoginBtn = document.getElementById('ctaLoginBtn');
+    const learnMoreBtn = document.getElementById('learnMoreBtn');
+    const footerLogin = document.getElementById('footerLogin');
+    const footerRegister = document.getElementById('footerRegister');
+    
+    if (loginBtn) loginBtn.addEventListener('click', () => openModal('loginModal'));
+    if (registerBtn) registerBtn.addEventListener('click', () => openModal('registerModal'));
+    if (heroLoginBtn) heroLoginBtn.addEventListener('click', () => openModal('loginModal'));
+    if (ctaLoginBtn) ctaLoginBtn.addEventListener('click', () => openModal('loginModal'));
+    if (learnMoreBtn) learnMoreBtn.addEventListener('click', () => {
+        document.querySelector('.about-section').scrollIntoView({ behavior: 'smooth' });
+    });
+    if (footerLogin) footerLogin.addEventListener('click', (e) => { e.preventDefault(); openModal('loginModal'); });
+    if (footerRegister) footerRegister.addEventListener('click', (e) => { e.preventDefault(); openModal('registerModal'); });
+    
+    // Auth form submissions
+    if (loginForm) loginForm.addEventListener('submit', handleLogin);
+    
+    const registerForm = document.getElementById('registerForm');
+    if (registerForm) registerForm.addEventListener('submit', handleRegister);
+    
+    // Auth switch links
+    const switchToRegister = document.getElementById('switchToRegister');
+    const switchToLogin = document.getElementById('switchToLogin');
+    
+    if (switchToRegister) {
+        switchToRegister.addEventListener('click', (e) => {
+            e.preventDefault();
+            closeModal('loginModal');
+            openModal('registerModal');
+        });
+    }
+    
+    if (switchToLogin) {
+        switchToLogin.addEventListener('click', (e) => {
+            e.preventDefault();
+            closeModal('registerModal');
+            openModal('loginModal');
+        });
+    }
+    
+    // Login form (legacy)
     if (loginForm) {
         loginForm.addEventListener('submit', handleLogin);
+    }
+    
+    // Modal close buttons
+    const closeButtons = document.querySelectorAll('.close');
+    closeButtons.forEach(btn => {
+        btn.addEventListener('click', closeModal);
+    });
+    
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+        if (event.target.classList.contains('modal')) {
+            closeModal();
+        }
     }
     
     // User portal listeners

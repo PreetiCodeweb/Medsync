@@ -3,46 +3,192 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MedSync - Hospital Management System</title>
+    <title>MedSync - AI Hospital Management System</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="login-container">
-        <div class="login-box">
+    <!-- Navigation Header -->
+    <header class="landing-header">
+        <div class="header-content">
             <div class="logo">
                 <h1>🏥 MedSync</h1>
                 <p>AI-Powered Hospital Management</p>
             </div>
+            <nav class="nav-buttons">
+                <button id="loginBtn" class="btn btn-secondary">Login</button>
+                <button id="registerBtn" class="btn btn-primary">Register</button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="hero-content">
+            <h2>Revolutionizing Healthcare with AI</h2>
+            <p>MedSync is an intelligent hospital management system that connects patients with healthcare providers using advanced AI technology.</p>
+            <div class="hero-buttons">
+                <button id="heroLoginBtn" class="btn btn-primary">Get Started</button>
+                <button id="learnMoreBtn" class="btn btn-secondary">Learn More</button>
+            </div>
+        </div>
+        <div class="hero-features">
+            <div class="feature-card">
+                <div class="feature-icon">🧠</div>
+                <h3>AI-Powered Analysis</h3>
+                <p>Advanced RAG system for accurate symptom analysis and medical recommendations</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🏥</div>
+                <h3>Real-Time Hospital Data</h3>
+                <p>Live bed availability, doctor schedules, and emergency services</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🚑</div>
+                <h3>Emergency Response</h3>
+                <p>Instant ambulance booking and emergency department connections</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section class="about-section">
+        <div class="about-content">
+            <h2>About MedSync</h2>
+            <p>MedSync is a comprehensive hospital management platform designed to bridge the gap between patients and healthcare providers. Our AI-powered system ensures that patients receive timely and accurate medical guidance while hospitals can efficiently manage their resources.</p>
             
-            <form id="loginForm">
-                <div class="form-group">
-                    <label for="email">Email</label>
-                    <input type="email" id="email" name="email" required placeholder="Enter your email">
+            <div class="about-features">
+                <div class="about-item">
+                    <h4>👥 For Patients</h4>
+                    <p>Find nearby hospitals, check bed availability, consult with AI for symptom analysis, and get connected with the right medical specialists instantly.</p>
                 </div>
-                
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" name="password" required placeholder="Enter your password">
+                <div class="about-item">
+                    <h4>🏥 For Hospitals</h4>
+                    <p>Manage hospital operations, track doctor availability, update bed status, and provide real-time information to patients seeking care.</p>
                 </div>
-                
-                <button type="submit" class="btn btn-primary">Login</button>
-            </form>
-            
-            <div class="demo-credentials">
-                <h3>Demo Credentials</h3>
-                <div class="credential-box">
-                    <p><strong>User Portal:</strong></p>
-                    <p>Email: user@medsync.com</p>
-                    <p>Password: user123</p>
-                </div>
-                <div class="credential-box">
-                    <p><strong>Hospital Portal:</strong></p>
-                    <p>Email: hospital@medsync.com</p>
-                    <p>Password: hospital123</p>
+                <div class="about-item">
+                    <h4>🤖 AI Integration</h4>
+                    <p>Our RAG-powered system analyzes symptoms using a comprehensive medical knowledge base, providing intelligent recommendations and department matching.</p>
                 </div>
             </div>
-            
-            <div id="errorMessage" class="error-message"></div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section class="how-it-works">
+        <h2>How It Works</h2>
+        <div class="steps">
+            <div class="step">
+                <div class="step-number">1</div>
+                <h3>Register/Login</h3>
+                <p>Create an account or login to access our platform</p>
+            </div>
+            <div class="step">
+                <div class="step-number">2</div>
+                <h3>Describe Symptoms</h3>
+                <p>Use voice or text to describe your medical concerns</p>
+            </div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <h3>AI Analysis</h3>
+                <p>Our RAG system analyzes and provides recommendations</p>
+            </div>
+            <div class="step">
+                <div class="step-number">4</div>
+                <h3>Connect with Care</h3>
+                <p>Find hospitals and doctors, book appointments</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <h2>Ready to Experience Better Healthcare?</h2>
+        <p>Join thousands of users who trust MedSync for their healthcare needs</p>
+        <button id="ctaLoginBtn" class="btn btn-primary btn-large">Get Started Now</button>
+    </section>
+
+    <!-- Footer -->
+    <footer class="landing-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>MedSync</h3>
+                <p>AI-Powered Hospital Management System</p>
+            </div>
+            <div class="footer-section">
+                <h4>Quick Links</h4>
+                <a href="#" id="footerLogin">Login</a>
+                <a href="#" id="footerRegister">Register</a>
+                <a href="#about">About</a>
+            </div>
+            <div class="footer-section">
+                <h4>Contact</h4>
+                <p>support@medsync.com</p>
+                <p>+1 (555) 123-4567</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 MedSync. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div class="auth-form">
+                <h2>Login to MedSync</h2>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" required placeholder="Enter your email">
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" required placeholder="Enter your password">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Login</button>
+                </form>
+                <div class="auth-switch">
+                    <p>Don't have an account? <a href="#" id="switchToRegister">Register</a></p>
+                </div>
+                <div id="errorMessage" class="error-message"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div id="registerModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div class="auth-form">
+                <h2>Register for MedSync</h2>
+                <form id="registerForm">
+                    <div class="form-group">
+                        <label for="regEmail">Email</label>
+                        <input type="email" id="regEmail" name="email" required placeholder="Enter your email">
+                    </div>
+                    <div class="form-group">
+                        <label for="regPassword">Password</label>
+                        <input type="password" id="regPassword" name="password" required placeholder="Create a password">
+                    </div>
+                    <div class="form-group">
+                        <label for="regConfirmPassword">Confirm Password</label>
+                        <input type="password" id="regConfirmPassword" name="confirmPassword" required placeholder="Confirm your password">
+                    </div>
+                    <div class="form-group">
+                        <label for="regRole">I am a:</label>
+                        <select id="regRole" name="role" required>
+                            <option value="user">Patient</option>
+                            <option value="hospital">Hospital Staff</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Register</button>
+                </form>
+                <div class="auth-switch">
+                    <p>Already have an account? <a href="#" id="switchToLogin">Login</a></p>
+                </div>
+                <div id="registerMessage" class="error-message"></div>
+            </div>
         </div>
     </div>
 
