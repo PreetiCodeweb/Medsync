@@ -14,6 +14,7 @@ from fastapi import FastAPI, HTTPException, Depends, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.middleware.gzip import GZipMiddleware
 from pydantic import BaseModel, Field
 from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
 from prometheus_client.exposition import start_http_server
@@ -141,6 +142,48 @@ def init_db():
                 ip_address TEXT,
                 user_agent TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        # Appointments table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS appointments (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                hospital_id INTEGER,
+                doctor_id INTEGER,
+                appointment_date TIMESTAMP NOT NULL,
+                reason TEXT,
+                status TEXT DEFAULT 'scheduled' CHECK(status IN ('scheduled', 'confirmed', 'completed', 'cancelled')),
+                notes TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                FOREIGN KEY (hospital_id) REFERENCES hospitals(id) ON DELETE CASCADE,
+                FOREIGN KEY (doctor_id) REFERENCES doctors(id) ON DELETE SET NULL
+            )
+        ''')
+        
+        # User profiles table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS user_profiles (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER UNIQUE NOT NULL,
+                full_name TEXT,
+                phone TEXT,
+                date_of_birth DATE,
+                address TEXT,
+                city TEXT,
+                state TEXT,
+                zip_code TEXT,
+                emergency_contact_name TEXT,
+                emergency_contact_phone TEXT,
+                blood_type TEXT,
+                allergies TEXT,
+                medical_conditions TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
             )
         ''')
         
@@ -279,6 +322,30 @@ class DepartmentCreate(BaseModel):
     name: str = Field(..., min_length=2, max_length=100)
     description: str = Field(..., min_length=10, max_length=1000)
 
+class AppointmentCreate(BaseModel):
+    hospital_id: int = Field(..., gt=0)
+    doctor_id: Optional[int] = Field(None, gt=0)
+    appointment_date: str = Field(..., description="ISO format datetime string")
+    reason: str = Field(..., min_length=5, max_length=500)
+    notes: Optional[str] = Field(None, max_length=1000)
+
+class UserProfileCreate(BaseModel):
+    full_name: Optional[str] = Field(None, max_length=200)
+    phone: Optional[str] = Field(None, pattern=r'^\+?[\d\s-]+$')
+    date_of_birth: Optional[str] = Field(None, description="ISO format date string")
+    address: Optional[str] = Field(None, max_length=500)
+    city: Optional[str] = Field(None, max_length=100)
+    state: Optional[str] = Field(None, max_length=100)
+    zip_code: Optional[str] = Field(None, max_length=20)
+    emergency_contact_name: Optional[str] = Field(None, max_length=200)
+    emergency_contact_phone: Optional[str] = Field(None, pattern=r'^\+?[\d\s-]+$')
+    blood_type: Optional[str] = Field(None, max_length=5)
+    allergies: Optional[str] = Field(None, max_length=500)
+    medical_conditions: Optional[str] = Field(None, max_length=1000)
+
+class AppointmentUpdate(BaseModel):
+    status: str = Field(..., pattern=r'^(scheduled|confirmed|completed|cancelled)$')
+
 class SymptomAnalysis(BaseModel):
     symptoms: str = Field(..., min_length=5, max_length=2000)
     user_location: Optional[str] = None
@@ -330,8 +397,11 @@ async def lifespan(app: FastAPI):
     
     # Start metrics server if enabled
     if settings.ENABLE_METRICS:
-        logger.info(f"Starting metrics server on port {settings.METRICS_PORT}")
-        start_http_server(settings.METRICS_PORT)
+        try:
+            logger.info(f"Starting metrics server on port {settings.METRICS_PORT}")
+            start_http_server(settings.METRICS_PORT)
+        except OSError as e:
+            logger.warning(f"Metrics server already running on port {settings.METRICS_PORT}")
     
     logger.info("MedSync application started successfully")
     yield
@@ -358,6 +428,8 @@ app.add_middleware(
     expose_headers=["*"],
     max_age=600,
 )
+
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # Request logging middleware
 @app.middleware("http")
@@ -509,6 +581,62 @@ def login(request: LoginRequest):
         logger.error(f"Login error: {str(e)}")
         raise HTTPException(status_code=500, detail="Login failed")
 
+class RegisterRequest(BaseModel):
+    email: str = Field(..., pattern=r'^[^@]+@[^@]+\.[^@]+$')
+    password: str = Field(..., min_length=6)
+    confirm_password: str = Field(..., min_length=6)
+    role: str = Field(..., pattern=r'^(user|hospital)$')
+    full_name: Optional[str] = Field(None, max_length=200)
+    phone: Optional[str] = Field(None, pattern=r'^\+?[\d\s-]+$')
+
+@app.post("/api/register")
+def register(request: RegisterRequest):
+    """User registration endpoint"""
+    try:
+        # Validate passwords match
+        if request.password != request.confirm_password:
+            raise HTTPException(status_code=400, detail="Passwords do not match")
+        
+        # Check if user already exists
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT id FROM users WHERE email = ?', (request.email,))
+        existing_user = cursor.fetchone()
+        
+        if existing_user:
+            conn.close()
+            raise HTTPException(status_code=400, detail="User with this email already exists")
+        
+        # Hash password
+        from passlib.context import CryptContext
+        pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+        hashed_password = pwd_context.hash(request.password)
+        
+        # Create user
+        cursor.execute('''
+            INSERT INTO users (email, password, role, created_at)
+            VALUES (?, ?, ?, ?)
+        ''', (request.email, hashed_password, request.role, datetime.now(timezone.utc).isoformat()))
+        
+        user_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        
+        logger.info(f"New user registered: {request.email} as {request.role}")
+        
+        return {
+            "id": user_id,
+            "email": request.email,
+            "role": request.role,
+            "message": "Registration successful. Please login with your credentials."
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Registration error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Registration failed")
+
 # Hospital endpoints
 @app.get("/api/hospitals")
 def get_hospitals():
@@ -626,6 +754,35 @@ def create_hospital(hospital: HospitalCreate, current_user: dict = Depends(verif
         logger.error(f"Error creating hospital: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to create hospital")
 
+@app.delete("/api/hospitals/{hospital_id}")
+def delete_hospital(hospital_id: int, current_user: dict = Depends(verify_token)):
+    """Delete hospital (admin only)"""
+    if current_user['role'] != 'admin':
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Check if hospital exists
+        cursor.execute('SELECT id FROM hospitals WHERE id = ?', (hospital_id,))
+        if not cursor.fetchone():
+            conn.close()
+            raise HTTPException(status_code=404, detail="Hospital not found")
+        
+        cursor.execute('DELETE FROM hospitals WHERE id = ?', (hospital_id,))
+        conn.commit()
+        conn.close()
+        
+        logger.info(f"Hospital deleted: {hospital_id} by {current_user['email']}")
+        return {"message": "Hospital deleted successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting hospital: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to delete hospital")
+
 @app.put("/api/hospitals/{hospital_id}")
 def update_hospital(hospital_id: int, hospital: HospitalCreate, current_user: dict = Depends(verify_token)):
     """Update hospital (hospital/admin only)"""
@@ -711,6 +868,13 @@ def delete_doctor(doctor_id: int, current_user: dict = Depends(verify_token)):
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
+        
+        # Check if doctor exists
+        cursor.execute('SELECT id FROM doctors WHERE id = ?', (doctor_id,))
+        if not cursor.fetchone():
+            conn.close()
+            raise HTTPException(status_code=404, detail="Doctor not found")
+        
         cursor.execute('DELETE FROM doctors WHERE id = ?', (doctor_id,))
         conn.commit()
         conn.close()
@@ -718,6 +882,8 @@ def delete_doctor(doctor_id: int, current_user: dict = Depends(verify_token)):
         logger.info(f"Doctor deleted: {doctor_id} by {current_user['email']}")
         return {"message": "Doctor deleted successfully"}
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error deleting doctor: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to delete doctor")
@@ -746,6 +912,35 @@ def create_department(department: DepartmentCreate, current_user: dict = Depends
     except Exception as e:
         logger.error(f"Error creating department: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to create department")
+
+@app.delete("/api/departments/{department_id}")
+def delete_department(department_id: int, current_user: dict = Depends(verify_token)):
+    """Delete department (hospital/admin only)"""
+    if current_user['role'] not in ['hospital', 'admin']:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Check if department exists
+        cursor.execute('SELECT id FROM departments WHERE id = ?', (department_id,))
+        if not cursor.fetchone():
+            conn.close()
+            raise HTTPException(status_code=404, detail="Department not found")
+        
+        cursor.execute('DELETE FROM departments WHERE id = ?', (department_id,))
+        conn.commit()
+        conn.close()
+        
+        logger.info(f"Department deleted: {department_id} by {current_user['email']}")
+        return {"message": "Department deleted successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting department: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to delete department")
 
 # Management endpoints
 @app.get("/api/management/hospitals")
@@ -806,6 +1001,289 @@ def get_management_departments(current_user: dict = Depends(verify_token)):
     except Exception as e:
         logger.error(f"Error fetching management departments: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to fetch departments")
+
+# Appointment management endpoints
+@app.post("/api/appointments")
+def create_appointment(appointment: AppointmentCreate, current_user: dict = Depends(verify_token)):
+    """Create new appointment (user only)"""
+    if current_user['role'] != 'user':
+        raise HTTPException(status_code=403, detail="Only users can create appointments")
+    
+    try:
+        # Get user ID from email
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT id FROM users WHERE email = ?', (current_user['email'],))
+        user = cursor.fetchone()
+        
+        if not user:
+            conn.close()
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        user_id = user['id']
+        
+        # Validate hospital exists
+        cursor.execute('SELECT id FROM hospitals WHERE id = ?', (appointment.hospital_id,))
+        if not cursor.fetchone():
+            conn.close()
+            raise HTTPException(status_code=404, detail="Hospital not found")
+        
+        # Validate doctor exists if provided
+        if appointment.doctor_id:
+            cursor.execute('SELECT id FROM doctors WHERE id = ?', (appointment.doctor_id,))
+            if not cursor.fetchone():
+                conn.close()
+                raise HTTPException(status_code=404, detail="Doctor not found")
+        
+        cursor.execute('''
+            INSERT INTO appointments (user_id, hospital_id, doctor_id, appointment_date, reason, notes)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (user_id, appointment.hospital_id, appointment.doctor_id, 
+              appointment.appointment_date, appointment.reason, appointment.notes))
+        
+        appointment_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        
+        logger.info(f"Appointment created: {appointment_id} by user {current_user['email']}")
+        return {"id": appointment_id, "message": "Appointment created successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating appointment: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to create appointment")
+
+@app.get("/api/appointments")
+def get_user_appointments(current_user: dict = Depends(verify_token)):
+    """Get user's appointments (user only)"""
+    if current_user['role'] != 'user':
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    try:
+        # Get user ID from email
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT id FROM users WHERE email = ?', (current_user['email'],))
+        user = cursor.fetchone()
+        
+        if not user:
+            conn.close()
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        user_id = user['id']
+        
+        cursor.execute('''
+            SELECT appointments.*, hospitals.name as hospital_name, doctors.name as doctor_name
+            FROM appointments
+            JOIN hospitals ON appointments.hospital_id = hospitals.id
+            LEFT JOIN doctors ON appointments.doctor_id = doctors.id
+            WHERE appointments.user_id = ?
+            ORDER BY appointments.appointment_date DESC
+        ''', (user_id,))
+        
+        appointments = [dict(row) for row in cursor.fetchall()]
+        conn.close()
+        return appointments
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching appointments: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to fetch appointments")
+
+@app.put("/api/appointments/{appointment_id}")
+def update_appointment(appointment_id: int, update: AppointmentUpdate, current_user: dict = Depends(verify_token)):
+    """Update appointment status (user/hospital/admin)"""
+    if current_user['role'] not in ['user', 'hospital', 'admin']:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Check if appointment exists
+        cursor.execute('SELECT id FROM appointments WHERE id = ?', (appointment_id,))
+        if not cursor.fetchone():
+            conn.close()
+            raise HTTPException(status_code=404, detail="Appointment not found")
+        
+        cursor.execute('''
+            UPDATE appointments SET status = ?, updated_at = ? WHERE id = ?
+        ''', (update.status, datetime.now(timezone.utc).isoformat(), appointment_id))
+        
+        conn.commit()
+        conn.close()
+        
+        logger.info(f"Appointment {appointment_id} updated to {update.status} by {current_user['email']}")
+        return {"message": "Appointment updated successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating appointment: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to update appointment")
+
+@app.delete("/api/appointments/{appointment_id}")
+def cancel_appointment(appointment_id: int, current_user: dict = Depends(verify_token)):
+    """Cancel appointment (user only)"""
+    if current_user['role'] != 'user':
+        raise HTTPException(status_code=403, detail="Only users can cancel their appointments")
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Check if appointment exists and belongs to user
+        cursor.execute('SELECT id FROM appointments WHERE id = ?', (appointment_id,))
+        if not cursor.fetchone():
+            conn.close()
+            raise HTTPException(status_code=404, detail="Appointment not found")
+        
+        cursor.execute('''
+            UPDATE appointments SET status = 'cancelled', updated_at = ? WHERE id = ?
+        ''', (datetime.now(timezone.utc).isoformat(), appointment_id))
+        
+        conn.commit()
+        conn.close()
+        
+        logger.info(f"Appointment {appointment_id} cancelled by user {current_user['email']}")
+        return {"message": "Appointment cancelled successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error cancelling appointment: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to cancel appointment")
+
+# User profile management endpoints
+@app.get("/api/profile")
+def get_user_profile(current_user: dict = Depends(verify_token)):
+    """Get user profile (user only)"""
+    if current_user['role'] != 'user':
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    try:
+        # Get user ID from email
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT id FROM users WHERE email = ?', (current_user['email'],))
+        user = cursor.fetchone()
+        
+        if not user:
+            conn.close()
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        user_id = user['id']
+        
+        cursor.execute('SELECT * FROM user_profiles WHERE user_id = ?', (user_id,))
+        profile = cursor.fetchone()
+        conn.close()
+        
+        if profile:
+            return dict(profile)
+        else:
+            return {"message": "Profile not found. Please create your profile."}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching profile: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to fetch profile")
+
+@app.post("/api/profile")
+def create_user_profile(profile: UserProfileCreate, current_user: dict = Depends(verify_token)):
+    """Create user profile (user only)"""
+    if current_user['role'] != 'user':
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    try:
+        # Get user ID from email
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT id FROM users WHERE email = ?', (current_user['email'],))
+        user = cursor.fetchone()
+        
+        if not user:
+            conn.close()
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        user_id = user['id']
+        
+        # Check if profile already exists
+        cursor.execute('SELECT id FROM user_profiles WHERE user_id = ?', (user_id,))
+        if cursor.fetchone():
+            conn.close()
+            raise HTTPException(status_code=400, detail="Profile already exists. Use PUT to update.")
+        
+        cursor.execute('''
+            INSERT INTO user_profiles (user_id, full_name, phone, date_of_birth, address, city, state, 
+                                      zip_code, emergency_contact_name, emergency_contact_phone, blood_type, 
+                                      allergies, medical_conditions)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (user_id, profile.full_name, profile.phone, profile.date_of_birth, profile.address,
+              profile.city, profile.state, profile.zip_code, profile.emergency_contact_name,
+              profile.emergency_contact_phone, profile.blood_type, profile.allergies, profile.medical_conditions))
+        
+        profile_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        
+        logger.info(f"Profile created for user {current_user['email']}")
+        return {"id": profile_id, "message": "Profile created successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating profile: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to create profile")
+
+@app.put("/api/profile")
+def update_user_profile(profile: UserProfileCreate, current_user: dict = Depends(verify_token)):
+    """Update user profile (user only)"""
+    if current_user['role'] != 'user':
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    try:
+        # Get user ID from email
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT id FROM users WHERE email = ?', (current_user['email'],))
+        user = cursor.fetchone()
+        
+        if not user:
+            conn.close()
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        user_id = user['id']
+        
+        # Check if profile exists
+        cursor.execute('SELECT id FROM user_profiles WHERE user_id = ?', (user_id,))
+        if not cursor.fetchone():
+            conn.close()
+            raise HTTPException(status_code=404, detail="Profile not found. Please create your profile first.")
+        
+        cursor.execute('''
+            UPDATE user_profiles SET full_name=?, phone=?, date_of_birth=?, address=?, city=?, state=?, 
+                                    zip_code=?, emergency_contact_name=?, emergency_contact_phone=?, blood_type=?, 
+                                    allergies=?, medical_conditions=?, updated_at=?
+            WHERE user_id=?
+        ''', (profile.full_name, profile.phone, profile.date_of_birth, profile.address, profile.city,
+              profile.state, profile.zip_code, profile.emergency_contact_name, profile.emergency_contact_phone,
+              profile.blood_type, profile.allergies, profile.medical_conditions,
+              datetime.now(timezone.utc).isoformat(), user_id))
+        
+        conn.commit()
+        conn.close()
+        
+        logger.info(f"Profile updated for user {current_user['email']}")
+        return {"message": "Profile updated successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating profile: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to update profile")
 
 if __name__ == "__main__":
     import uvicorn

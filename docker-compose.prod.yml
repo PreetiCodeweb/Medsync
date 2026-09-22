@@ -1,0 +1,123 @@
+version: '3.8'
+
+services:
+  medsync-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: medsync-backend-prod
+    ports:
+      - "8000:8000"
+      - "9090:9090"
+    environment:
+      - ENVIRONMENT=production
+      - DATABASE_URL=postgresql://medsync:${POSTGRES_PASSWORD}@postgres:5432/medsync
+      - ENABLE_RAG=true
+      - LOG_LEVEL=INFO
+      - ENABLE_METRICS=true
+      - SECRET_KEY=${SECRET_KEY}
+    volumes:
+      - ./backend/chroma_db:/app/chroma_db
+      - ./backend/logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - medsync-network
+
+  medsync-frontend:
+    image: nginx:alpine
+    container_name: medsync-frontend-prod
+    ports:
+      - "3000:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - medsync-backend
+    restart: unless-stopped
+    networks:
+      - medsync-network
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: medsync-postgres
+    environment:
+      - POSTGRES_DB=medsync
+      - POSTGRES_USER=medsync
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U medsync"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - medsync-network
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: medsync-prometheus-prod
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    restart: unless-stopped
+    networks:
+      - medsync-network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: medsync-grafana-prod
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    volumes:
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    networks:
+      - medsync-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: medsync-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+    networks:
+      - medsync-network
+
+networks:
+  medsync-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  prometheus-data:
+  grafana-data:
+  redis-data:

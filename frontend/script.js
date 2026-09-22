@@ -65,16 +65,46 @@ async function handleRegister(e) {
     }
     
     try {
-        // For now, we'll use the existing login endpoint with demo users
-        // In production, this would call a registration endpoint
-        console.log('Registration request for:', email, 'as', role);
+        const response = await fetch(`${API_BASE_URL}/api/register`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ 
+                email, 
+                password, 
+                confirm_password: confirmPassword,
+                role 
+            })
+        });
         
-        // For demo purposes, we'll show a message that registration is handled by admins
-        showRegisterError('Registration is currently handled by hospital administrators. Please contact your hospital for account setup.');
+        const data = await response.json();
+        
+        if (response.ok) {
+            showRegisterSuccess('Registration successful! You can now login with your credentials.');
+            closeModal('registerModal');
+            openModal('loginModal');
+        } else {
+            showRegisterError(data.detail || 'Registration failed');
+        }
         
     } catch (error) {
         console.error('Registration error:', error);
         showRegisterError('Network error. Please try again.');
+    }
+}
+
+function showRegisterSuccess(message) {
+    if (registerMessage) {
+        registerMessage.textContent = message;
+        registerMessage.style.color = '#28a745';
+        registerMessage.style.background = '#d4edda';
+        registerMessage.style.display = 'block';
+        setTimeout(() => {
+            registerMessage.style.display = 'none';
+            registerMessage.style.color = '#dc3545';
+            registerMessage.style.background = '#f8d7da';
+        }, 5000);
     }
 }
 
@@ -860,10 +890,22 @@ async function editDoctor(doctorId) {
 async function deleteHospital(hospitalId) {
     if (confirm('Are you sure you want to delete this hospital?')) {
         try {
-            // Note: Delete endpoint not implemented in backend yet
-            alert('Delete functionality needs to be implemented in backend');
+            const response = await fetch(`${API_BASE_URL}/api/hospitals/${hospitalId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${authToken}`
+                }
+            });
+            
+            if (response.ok) {
+                loadManagementHospitals();
+            } else {
+                const error = await response.json();
+                alert(error.detail || 'Error deleting hospital');
+            }
         } catch (error) {
             console.error('Error deleting hospital:', error);
+            alert('Error deleting hospital');
         }
     }
 }
@@ -893,10 +935,22 @@ async function deleteDoctor(doctorId) {
 async function deleteDepartment(departmentId) {
     if (confirm('Are you sure you want to delete this department?')) {
         try {
-            // Note: Delete endpoint not implemented in backend yet
-            alert('Delete functionality needs to be implemented in backend');
+            const response = await fetch(`${API_BASE_URL}/api/departments/${departmentId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${authToken}`
+                }
+            });
+            
+            if (response.ok) {
+                loadManagementDepartments();
+            } else {
+                const error = await response.json();
+                alert(error.detail || 'Error deleting department');
+            }
         } catch (error) {
             console.error('Error deleting department:', error);
+            alert('Error deleting department');
         }
     }
 }

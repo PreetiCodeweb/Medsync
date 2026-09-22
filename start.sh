@@ -22,7 +22,7 @@ fi
 echo "📡 Starting Backend Server with RAG System..."
 cd backend
 source venv/bin/activate
-python app.py &
+python3 app.py &
 BACKEND_PID=$!
 cd ..
 

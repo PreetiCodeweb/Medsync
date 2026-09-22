@@ -3,7 +3,7 @@ Professional Configuration Management for MedSync
 Handles environment variables, settings, and configuration validation
 """
 from pydantic_settings import BaseSettings
-from pydantic import Field, validator
+from pydantic import Field, field_validator
 from typing import Optional
 import os
 from datetime import datetime, timezone
@@ -29,6 +29,11 @@ class Settings(BaseSettings):
     
     # Database
     DATABASE_URL: str = Field(default="sqlite:///database.db", env="DATABASE_URL")
+    POSTGRES_HOST: Optional[str] = Field(default="localhost", env="POSTGRES_HOST")
+    POSTGRES_PORT: Optional[int] = Field(default=5432, env="POSTGRES_PORT")
+    POSTGRES_USER: Optional[str] = Field(default="medsync", env="POSTGRES_USER")
+    POSTGRES_PASSWORD: Optional[str] = Field(default=None, env="POSTGRES_PASSWORD")
+    POSTGRES_DB: Optional[str] = Field(default="medsync", env="POSTGRES_DB")
     
     # CORS
     CORS_ORIGINS: str = Field(default="http://localhost:3000,http://127.0.0.1:3000", env="CORS_ORIGINS")
@@ -52,14 +57,24 @@ class Settings(BaseSettings):
     ENABLE_METRICS: bool = Field(default=True, env="ENABLE_METRICS")
     METRICS_PORT: int = Field(default=9090, env="METRICS_PORT")
     
-    @validator('ENVIRONMENT')
+    # Performance
+    ENABLE_CACHING: bool = Field(default=True, env="ENABLE_CACHING")
+    CACHE_TTL: int = Field(default=300, env="CACHE_TTL")  # 5 minutes default
+    
+    # Security
+    RATE_LIMIT_PER_MINUTE: int = Field(default=60, env="RATE_LIMIT_PER_MINUTE")
+    MAX_REQUEST_SIZE: int = Field(default=10485760, env="MAX_REQUEST_SIZE")  # 10MB
+    
+    @field_validator('ENVIRONMENT')
+    @classmethod
     def validate_environment(cls, v):
         valid_environments = ['development', 'staging', 'production']
         if v not in valid_environments:
             raise ValueError(f'Environment must be one of {valid_environments}')
         return v
     
-    @validator('LOG_LEVEL')
+    @field_validator('LOG_LEVEL')
+    @classmethod
     def validate_log_level(cls, v):
         valid_levels = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
         if v.upper() not in valid_levels:
