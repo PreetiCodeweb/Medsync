@@ -28,9 +28,9 @@ function checkAuth() {
         currentUser = JSON.parse(storedUser);
         
         // Redirect to appropriate portal
-        if (currentUser.role === 'user') {
+        if (currentUser.role === 'user' && !window.location.pathname.endsWith('user_portal.html')) {
             window.location.href = 'user_portal.html';
-        } else if (currentUser.role === 'hospital') {
+        } else if (currentUser.role === 'hospital' && !window.location.pathname.endsWith('hospital_portal.html')) {
             window.location.href = 'hospital_portal.html';
         }
     }
@@ -38,10 +38,21 @@ function checkAuth() {
 
 // Modal functions
 function openModal(modalId) {
-    document.getElementById(modalId).classList.remove('hidden');
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.remove('hidden');
+    }
 }
 
-function closeModal() {
+function closeModal(modalId = null) {
+    if (modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+        return;
+    }
+
     document.querySelectorAll('.modal').forEach(modal => modal.classList.add('hidden'));
 }
 
@@ -164,17 +175,6 @@ function setupEventListeners() {
         });
     }
     
-    // Login form (legacy)
-    if (loginForm) {
-        loginForm.addEventListener('submit', handleLogin);
-    }
-    
-    // Modal close buttons
-    const closeButtons = document.querySelectorAll('.close');
-    closeButtons.forEach(btn => {
-        btn.addEventListener('click', closeModal);
-    });
-    
     // Close modal when clicking outside
     window.onclick = function(event) {
         if (event.target.classList.contains('modal')) {
@@ -259,9 +259,9 @@ function setupEventListeners() {
     // Modal close buttons
     const closeButtons = document.querySelectorAll('.close');
     closeButtons.forEach(btn => {
-        btn.addEventListener('click', closeModal);
+        btn.addEventListener('click', () => closeModal());
     });
-    
+
     // Load management data if on hospital portal
     if (window.location.pathname.includes('hospital_portal.html')) {
         loadManagementData();
@@ -701,15 +701,6 @@ async function loadHospitalsForSelect(selectId) {
     } catch (error) {
         console.error('Error loading hospitals for select:', error);
     }
-}
-
-// Modal functions
-function openModal(modalId) {
-    document.getElementById(modalId).classList.remove('hidden');
-}
-
-function closeModal() {
-    document.querySelectorAll('.modal').forEach(modal => modal.classList.add('hidden'));
 }
 
 // Form handlers
