@@ -2,14 +2,16 @@
 Test suite for MedSync backend application
 """
 import pytest
+import pytest_asyncio
 import httpx
 from app import app
 
 BASE_URL = "http://localhost:8000"
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def client():
-    async with httpx.AsyncClient(app=app, base_url=BASE_URL) as ac:
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url=BASE_URL) as ac:
         yield ac
 
 @pytest.mark.asyncio
@@ -158,9 +160,6 @@ async def test_hospital_departments(client):
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data, list)
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

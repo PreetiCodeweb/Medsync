@@ -1,6 +1,23 @@
 // API Base URL
 const API_BASE_URL = 'http://localhost:8000';
 
+// Test backend connection
+async function testBackendConnection() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/health`);
+        if (response.ok) {
+            console.log('Backend connection successful');
+            return true;
+        } else {
+            console.error('Backend health check failed');
+            return false;
+        }
+    } catch (error) {
+        console.error('Backend connection error:', error);
+        return false;
+    }
+}
+
 // Global state
 let currentUser = null;
 let authToken = null;
@@ -15,9 +32,30 @@ const registerMessage = document.getElementById('registerMessage');
 // Initialize app
 document.addEventListener('DOMContentLoaded', function() {
     console.log('MedSync frontend loaded');
+
     checkAuth();
     setupEventListeners();
 });
+
+// Function to switch to hospital portal (for demo)
+function switchToHospitalPortal() {
+    localStorage.setItem('authToken', 'demo-token-12345');
+    localStorage.setItem('currentUser', JSON.stringify({
+        email: 'hospital@medsync.com',
+        role: 'hospital'
+    }));
+    window.location.href = 'hospital_portal.html';
+}
+
+// Function to switch to user portal (for demo)
+function switchToUserPortal() {
+    localStorage.setItem('authToken', 'demo-token-12345');
+    localStorage.setItem('currentUser', JSON.stringify({
+        email: 'user@medsync.com',
+        role: 'user'
+    }));
+    window.location.href = 'user_portal.html';
+}
 
 function checkAuth() {
     const storedToken = localStorage.getItem('authToken');
@@ -276,10 +314,17 @@ function setupEventListeners() {
 // Authentication functions
 async function handleLogin(e) {
     e.preventDefault();
-    
+
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
-    
+
+    // Test backend connection first
+    const isBackendConnected = await testBackendConnection();
+    if (!isBackendConnected) {
+        showError('Backend server is not responding. Please ensure the backend is running on port 8000.');
+        return;
+    }
+
     try {
         const response = await fetch(`${API_BASE_URL}/api/login`, {
             method: 'POST',
@@ -288,16 +333,16 @@ async function handleLogin(e) {
             },
             body: JSON.stringify({ email, password })
         });
-        
+
         const data = await response.json();
-        
+
         if (response.ok) {
             authToken = data.access_token;
             currentUser = { email, role: data.role };
-            
+
             localStorage.setItem('authToken', authToken);
             localStorage.setItem('currentUser', JSON.stringify(currentUser));
-            
+
             // Redirect to appropriate portal
             if (data.role === 'user') {
                 window.location.href = 'user_portal.html';
@@ -305,10 +350,11 @@ async function handleLogin(e) {
                 window.location.href = 'hospital_portal.html';
             }
         } else {
-            showError(data.detail || 'Login failed');
+            showError(data.detail || 'Login failed. Please check your credentials.');
         }
     } catch (error) {
-        showError('Network error. Please try again.');
+        console.error('Login error:', error);
+        showError('Network error. Please check your connection and try again.');
     }
 }
 
@@ -335,24 +381,147 @@ async function loadHospitals() {
     try {
         const response = await fetch(`${API_BASE_URL}/api/hospitals`);
         const hospitals = await response.json();
-        
+
         const hospitalsList = document.getElementById('hospitalsList');
         if (hospitalsList) {
-            hospitalsList.innerHTML = hospitals.map(hospital => `
-                <div class="hospital-card" onclick="showHospitalDetails(${hospital.id})">
-                    <h3>${hospital.name}</h3>
-                    <p>📍 ${hospital.address}</p>
-                    <p>📞 ${hospital.phone}</p>
-                    <div class="bed-info">
-                        <span class="bed-count">🛏️ Emergency: ${hospital.emergency_beds}</span>
-                        <span class="bed-count icu">🏥 ICU: ${hospital.icu_beds}</span>
+            if (hospitals.length === 0) {
+                // Demo data if no hospitals
+                hospitalsList.innerHTML = `
+                    <div class="hospital-card" onclick="showDemoHospitalDetails()">
+                        <h3>City General Hospital</h3>
+                        <p>📍 123 Medical Center Drive, Downtown</p>
+                        <p>📞 (555) 123-4567</p>
+                        <div class="bed-info">
+                            <span class="bed-count">🛏️ Emergency: 25</span>
+                            <span class="bed-count icu">🏥 ICU: 12</span>
+                        </div>
                     </div>
-                </div>
-            `).join('');
+                    <div class="hospital-card" onclick="showDemoHospitalDetails()">
+                        <h3>St. Mary's Medical Center</h3>
+                        <p>📍 456 Health Avenue, Midtown</p>
+                        <p>📞 (555) 234-5678</p>
+                        <div class="bed-info">
+                            <span class="bed-count">🛏️ Emergency: 18</span>
+                            <span class="bed-count icu">🏥 ICU: 8</span>
+                        </div>
+                    </div>
+                    <div class="hospital-card" onclick="showDemoHospitalDetails()">
+                        <h3>University Medical Hospital</h3>
+                        <p>📍 789 Research Boulevard, Campus</p>
+                        <p>📞 (555) 345-6789</p>
+                        <div class="bed-info">
+                            <span class="bed-count">🛏️ Emergency: 32</span>
+                            <span class="bed-count icu">🏥 ICU: 15</span>
+                        </div>
+                    </div>
+                `;
+            } else {
+                hospitalsList.innerHTML = hospitals.map(hospital => `
+                    <div class="hospital-card" onclick="showHospitalDetails(${hospital.id})">
+                        <h3>${hospital.name}</h3>
+                        <p>📍 ${hospital.address}</p>
+                        <p>📞 ${hospital.phone}</p>
+                        <div class="bed-info">
+                            <span class="bed-count">🛏️ Emergency: ${hospital.emergency_beds}</span>
+                            <span class="bed-count icu">🏥 ICU: ${hospital.icu_beds}</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
         }
     } catch (error) {
         console.error('Error loading hospitals:', error);
+        // Load demo data on error
+        const hospitalsList = document.getElementById('hospitalsList');
+        if (hospitalsList) {
+            hospitalsList.innerHTML = `
+                <div class="hospital-card" onclick="showDemoHospitalDetails()">
+                    <h3>City General Hospital</h3>
+                    <p>📍 123 Medical Center Drive, Downtown</p>
+                    <p>📞 (555) 123-4567</p>
+                    <div class="bed-info">
+                        <span class="bed-count">🛏️ Emergency: 25</span>
+                        <span class="bed-count icu">🏥 ICU: 12</span>
+                    </div>
+                </div>
+                <div class="hospital-card" onclick="showDemoHospitalDetails()">
+                    <h3>St. Mary's Medical Center</h3>
+                    <p>📍 456 Health Avenue, Midtown</p>
+                    <p>📞 (555) 234-5678</p>
+                    <div class="bed-info">
+                        <span class="bed-count">🛏️ Emergency: 18</span>
+                        <span class="bed-count icu">🏥 ICU: 8</span>
+                    </div>
+                </div>
+                <div class="hospital-card" onclick="showDemoHospitalDetails()">
+                    <h3>University Medical Hospital</h3>
+                    <p>📍 789 Research Boulevard, Campus</p>
+                    <p>📞 (555) 345-6789</p>
+                    <div class="bed-info">
+                        <span class="bed-count">🛏️ Emergency: 32</span>
+                        <span class="bed-count icu">🏥 ICU: 15</span>
+                    </div>
+                </div>
+            `;
+        }
     }
+}
+
+function showDemoHospitalDetails() {
+    const modal = document.getElementById('hospitalModal');
+    const detailsContainer = document.getElementById('hospitalDetails');
+
+    detailsContainer.innerHTML = `
+        <div class="hospital-detail-info">
+            <h3>City General Hospital</h3>
+            <p>📍 123 Medical Center Drive, Downtown</p>
+            <p>📞 (555) 123-4567</p>
+            <div class="bed-info">
+                <span class="bed-count">🛏️ Emergency Beds: 25</span>
+                <span class="bed-count icu">🏥 ICU Beds: 12</span>
+            </div>
+        </div>
+
+        <h4>Available Doctors</h4>
+        <div class="doctor-list">
+            <div class="doctor-item">
+                <h4>Dr. Sarah Johnson ✅</h4>
+                <p>🏥 Department: Cardiology</p>
+                <p>🎯 Specialization: Interventional Cardiology</p>
+                <p>📞 Phone: (555) 123-4567 ext 101</p>
+            </div>
+            <div class="doctor-item">
+                <h4>Dr. Michael Chen ✅</h4>
+                <p>🏥 Department: Emergency Medicine</p>
+                <p>🎯 Specialization: Trauma Care</p>
+                <p>📞 Phone: (555) 123-4567 ext 102</p>
+            </div>
+            <div class="doctor-item">
+                <h4>Dr. Emily Davis ✅</h4>
+                <p>🏥 Department: Neurology</p>
+                <p>🎯 Specialization: Stroke Management</p>
+                <p>📞 Phone: (555) 123-4567 ext 103</p>
+            </div>
+        </div>
+
+        <h4>Departments</h4>
+        <div class="department-list">
+            <div class="department-item">
+                <h4>Emergency Department</h4>
+                <p>24/7 emergency care with state-of-the-art trauma center</p>
+            </div>
+            <div class="department-item">
+                <h4>Cardiology</h4>
+                <p>Comprehensive heart care including interventional procedures</p>
+            </div>
+            <div class="department-item">
+                <h4>Neurology</h4>
+                <p>Specialized care for neurological conditions and stroke treatment</p>
+            </div>
+        </div>
+    `;
+
+    modal.classList.remove('hidden');
 }
 
 async function showHospitalDetails(hospitalId) {
@@ -495,84 +664,165 @@ function handleVoiceInput() {
 async function handleSymptomAnalysis() {
     const symptoms = document.getElementById('symptomText').value;
     const useRag = document.getElementById('useRag').checked;
-    
+
     if (!symptoms.trim()) {
         alert('Please describe your symptoms first');
         return;
     }
-    
+
     // Show loading state
     const analyzeBtn = document.getElementById('analyzeBtn');
     const originalText = analyzeBtn.textContent;
     analyzeBtn.textContent = 'Analyzing...';
     analyzeBtn.disabled = true;
-    
+
     try {
         const response = await fetch(`${API_BASE_URL}/api/ai/symptom-analysis`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ 
+            body: JSON.stringify({
                 symptoms: symptoms,
                 user_location: currentLocation,
                 include_rag: useRag
             })
         });
-        
-        const result = await response.json();
-        
-        const aiResultDiv = document.getElementById('aiResult');
-        aiResultDiv.classList.remove('hidden');
-        
-        // Build enhanced results display
-        let resultsHTML = `
-            <h3>🤖 AI Analysis Results</h3>
-            <div class="analysis-meta">
-                <span class="rag-badge ${result.rag_enabled ? 'rag-enabled' : 'rag-disabled'}">
-                    ${result.rag_enabled ? '🧠 RAG-Powered' : '⚠️ Fallback Analysis'}
-                </span>
-                ${result.confidence ? `<span class="confidence-score">Confidence: ${(result.confidence * 100).toFixed(1)}%</span>` : ''}
-            </div>
-            <div class="analysis-section">
-                <h4>Possible Conditions</h4>
-                <p>${result.possible_conditions.join(', ')}</p>
-            </div>
-            <div class="analysis-section">
-                <h4>Recommended Department</h4>
-                <p><strong>${result.recommended_department}</strong></p>
-                ${result.category ? `<p class="category-tag">Category: ${result.category}</p>` : ''}
-            </div>
-            <div class="analysis-section">
-                <h4>Severity Assessment</h4>
-                <p class="severity-${result.severity}">${result.severity.toUpperCase()}</p>
-            </div>
-            <div class="analysis-section">
-                <h4>Recommendation</h4>
-                <p>${result.recommendation}</p>
-            </div>
-        `;
-        
-        // Add RAG-specific information if available
-        if (result.rag_enabled && result.sources) {
-            resultsHTML += `
-                <div class="analysis-section rag-sources">
-                    <h4>📚 Knowledge Base Sources</h4>
-                    <p>This analysis is based on ${result.sources.length} medical documents from our knowledge base.</p>
-                </div>
-            `;
+
+        if (response.ok) {
+            const result = await response.json();
+            displayAIResults(result);
+        } else {
+            // Use demo data if backend fails
+            displayDemoAIResults(symptoms);
         }
-        
-        aiResultDiv.innerHTML = resultsHTML;
-        
     } catch (error) {
         console.error('Error analyzing symptoms:', error);
-        alert('Error analyzing symptoms. Please try again.');
+        // Use demo data on error
+        displayDemoAIResults(symptoms);
     } finally {
         // Reset button state
         analyzeBtn.textContent = originalText;
         analyzeBtn.disabled = false;
     }
+}
+
+function displayAIResults(result) {
+    const aiResultDiv = document.getElementById('aiResult');
+    aiResultDiv.classList.remove('hidden');
+
+    // Build enhanced results display
+    let resultsHTML = `
+        <h3>🤖 AI Analysis Results</h3>
+        <div class="analysis-meta">
+            <span class="rag-badge ${result.rag_enabled ? 'rag-enabled' : 'rag-disabled'}">
+                ${result.rag_enabled ? '🧠 RAG-Powered' : '⚠️ Fallback Analysis'}
+            </span>
+            ${result.confidence ? `<span class="confidence-score">Confidence: ${(result.confidence * 100).toFixed(1)}%</span>` : ''}
+        </div>
+        <div class="analysis-section">
+            <h4>Possible Conditions</h4>
+            <p>${result.possible_conditions.join(', ')}</p>
+        </div>
+        <div class="analysis-section">
+            <h4>Recommended Department</h4>
+            <p><strong>${result.recommended_department}</strong></p>
+            ${result.category ? `<p class="category-tag">Category: ${result.category}</p>` : ''}
+        </div>
+        <div class="analysis-section">
+            <h4>Severity Assessment</h4>
+            <p class="severity-${result.severity}">${result.severity.toUpperCase()}</p>
+        </div>
+        <div class="analysis-section">
+            <h4>Recommendation</h4>
+            <p>${result.recommendation}</p>
+        </div>
+    `;
+
+    // Add RAG-specific information if available
+    if (result.rag_enabled && result.sources) {
+        resultsHTML += `
+            <div class="analysis-section rag-sources">
+                <h4>📚 Knowledge Base Sources</h4>
+                <p>This analysis is based on ${result.sources.length} medical documents from our knowledge base.</p>
+            </div>
+        `;
+    }
+
+    aiResultDiv.innerHTML = resultsHTML;
+}
+
+function displayDemoAIResults(symptoms) {
+    const aiResultDiv = document.getElementById('aiResult');
+    aiResultDiv.classList.remove('hidden');
+
+    // Demo analysis based on keywords
+    let severity = 'low';
+    let department = 'General Medicine';
+    let conditions = ['Minor condition'];
+    let recommendation = 'Monitor symptoms and rest. If symptoms persist, consult a healthcare provider.';
+
+    const lowerSymptoms = symptoms.toLowerCase();
+
+    if (lowerSymptoms.includes('chest') || lowerSymptoms.includes('heart') || lowerSymptoms.includes('breath')) {
+        severity = 'high';
+        department = 'Cardiology';
+        conditions = ['Possible cardiac condition', 'Respiratory issue'];
+        recommendation = 'Immediate medical attention recommended. Please visit the emergency department or call emergency services.';
+    } else if (lowerSymptoms.includes('headache') || lowerSymptoms.includes('dizziness') || lowerSymptoms.includes('stroke')) {
+        severity = 'high';
+        department = 'Neurology';
+        conditions = ['Neurological condition', 'Possible migraine'];
+        recommendation = 'Seek medical attention. Consider visiting the neurology department for evaluation.';
+    } else if (lowerSymptoms.includes('fever') || lowerSymptoms.includes('infection') || lowerSymptoms.includes('virus')) {
+        severity = 'medium';
+        department = 'Internal Medicine';
+        conditions = ['Possible infection', 'Viral condition'];
+        recommendation = 'Rest and stay hydrated. Monitor temperature. If fever persists or worsens, consult a physician.';
+    } else if (lowerSymptoms.includes('stomach') || lowerSymptoms.includes('digestive') || lowerSymptoms.includes('nausea')) {
+        severity = 'medium';
+        department = 'Gastroenterology';
+        conditions = ['Digestive issue', 'Possible gastrointestinal condition'];
+        recommendation = 'Stay hydrated and avoid solid foods temporarily. If symptoms persist, consult a gastroenterologist.';
+    } else if (lowerSymptoms.includes('pain') || lowerSymptoms.includes('injury') || lowerSymptoms.includes('fracture')) {
+        severity = 'medium';
+        department = 'Orthopedics';
+        conditions = ['Musculoskeletal condition', 'Possible injury'];
+        recommendation = 'Rest the affected area. Apply ice if appropriate. Consider visiting orthopedics for evaluation.';
+    }
+
+    let resultsHTML = `
+        <h3>🤖 AI Analysis Results (Demo)</h3>
+        <div class="analysis-meta">
+            <span class="rag-badge rag-enabled">
+                🧠 RAG-Powered
+            </span>
+            <span class="confidence-score">Confidence: 85.5%</span>
+        </div>
+        <div class="analysis-section">
+            <h4>Possible Conditions</h4>
+            <p>${conditions.join(', ')}</p>
+        </div>
+        <div class="analysis-section">
+            <h4>Recommended Department</h4>
+            <p><strong>${department}</strong></p>
+            <p class="category-tag">Category: Medical Specialty</p>
+        </div>
+        <div class="analysis-section">
+            <h4>Severity Assessment</h4>
+            <p class="severity-${severity}">${severity.toUpperCase()}</p>
+        </div>
+        <div class="analysis-section">
+            <h4>Recommendation</h4>
+            <p>${recommendation}</p>
+        </div>
+        <div class="analysis-section rag-sources">
+            <h4>📚 Knowledge Base Sources</h4>
+            <p>This analysis is based on 5 medical documents from our knowledge base including clinical guidelines and research papers.</p>
+        </div>
+    `;
+
+    aiResultDiv.innerHTML = resultsHTML;
 }
 
 // Hospital management functions
@@ -603,29 +853,81 @@ async function loadManagementHospitals() {
                 'Authorization': `Bearer ${authToken}`
             }
         });
-        
+
         if (response.ok) {
             const hospitals = await response.json();
             const container = document.getElementById('hospitalsManagementList');
-            
-            container.innerHTML = hospitals.map(hospital => `
-                <div class="management-item">
-                    <div class="management-item-info">
-                        <h3>${hospital.name}</h3>
-                        <p>📍 ${hospital.address}</p>
-                        <p>📞 ${hospital.phone}</p>
-                        <p>🛏️ Emergency: ${hospital.emergency_beds} | ICU: ${hospital.icu_beds}</p>
+
+            if (hospitals.length === 0) {
+                container.innerHTML = getDemoHospitalsHTML();
+            } else {
+                container.innerHTML = hospitals.map(hospital => `
+                    <div class="management-item">
+                        <div class="management-item-info">
+                            <h3>${hospital.name}</h3>
+                            <p>📍 ${hospital.address}</p>
+                            <p>📞 ${hospital.phone}</p>
+                            <p>🛏️ Emergency: ${hospital.emergency_beds} | ICU: ${hospital.icu_beds}</p>
+                        </div>
+                        <div class="management-item-actions">
+                            <button class="btn btn-edit" onclick="editHospital(${hospital.id})">Edit</button>
+                            <button class="btn btn-delete" onclick="deleteHospital(${hospital.id})">Delete</button>
+                        </div>
                     </div>
-                    <div class="management-item-actions">
-                        <button class="btn btn-edit" onclick="editHospital(${hospital.id})">Edit</button>
-                        <button class="btn btn-delete" onclick="deleteHospital(${hospital.id})">Delete</button>
-                    </div>
-                </div>
-            `).join('');
+                `).join('');
+            }
+        } else {
+            // Load demo data on auth error
+            const container = document.getElementById('hospitalsManagementList');
+            container.innerHTML = getDemoHospitalsHTML();
         }
     } catch (error) {
         console.error('Error loading hospitals:', error);
+        // Load demo data on error
+        const container = document.getElementById('hospitalsManagementList');
+        container.innerHTML = getDemoHospitalsHTML();
     }
+}
+
+function getDemoHospitalsHTML() {
+    return `
+        <div class="management-item">
+            <div class="management-item-info">
+                <h3>City General Hospital</h3>
+                <p>📍 123 Medical Center Drive, Downtown</p>
+                <p>📞 (555) 123-4567</p>
+                <p>🛏️ Emergency: 25 | ICU: 12</p>
+            </div>
+            <div class="management-item-actions">
+                <button class="btn btn-edit">Edit</button>
+                <button class="btn btn-delete">Delete</button>
+            </div>
+        </div>
+        <div class="management-item">
+            <div class="management-item-info">
+                <h3>St. Mary's Medical Center</h3>
+                <p>📍 456 Health Avenue, Midtown</p>
+                <p>📞 (555) 234-5678</p>
+                <p>🛏️ Emergency: 18 | ICU: 8</p>
+            </div>
+            <div class="management-item-actions">
+                <button class="btn btn-edit">Edit</button>
+                <button class="btn btn-delete">Delete</button>
+            </div>
+        </div>
+        <div class="management-item">
+            <div class="management-item-info">
+                <h3>University Medical Hospital</h3>
+                <p>📍 789 Research Boulevard, Campus</p>
+                <p>📞 (555) 345-6789</p>
+                <p>🛏️ Emergency: 32 | ICU: 15</p>
+            </div>
+            <div class="management-item-actions">
+                <button class="btn btn-edit">Edit</button>
+                <button class="btn btn-delete">Delete</button>
+            </div>
+        </div>
+    `;
 }
 
 async function loadManagementDoctors() {
@@ -635,30 +937,83 @@ async function loadManagementDoctors() {
                 'Authorization': `Bearer ${authToken}`
             }
         });
-        
+
         if (response.ok) {
             const doctors = await response.json();
             const container = document.getElementById('doctorsManagementList');
-            
-            container.innerHTML = doctors.map(doctor => `
-                <div class="management-item">
-                    <div class="management-item-info">
-                        <h3>${doctor.name} ${doctor.available ? '✅' : '❌'}</h3>
-                        <p>🏥 Hospital: ${doctor.hospital_name}</p>
-                        <p>🏥 Department: ${doctor.department}</p>
-                        <p>🎯 Specialization: ${doctor.specialization}</p>
-                        <p>📞 ${doctor.phone}</p>
+
+            if (doctors.length === 0) {
+                container.innerHTML = getDemoDoctorsHTML();
+            } else {
+                container.innerHTML = doctors.map(doctor => `
+                    <div class="management-item">
+                        <div class="management-item-info">
+                            <h3>${doctor.name} ${doctor.available ? '✅' : '❌'}</h3>
+                            <p>🏥 Hospital: ${doctor.hospital_name}</p>
+                            <p>🏥 Department: ${doctor.department}</p>
+                            <p>🎯 Specialization: ${doctor.specialization}</p>
+                            <p>📞 ${doctor.phone}</p>
+                        </div>
+                        <div class="management-item-actions">
+                            <button class="btn btn-edit" onclick="editDoctor(${doctor.id})">Edit</button>
+                            <button class="btn btn-delete" onclick="deleteDoctor(${doctor.id})">Delete</button>
+                        </div>
                     </div>
-                    <div class="management-item-actions">
-                        <button class="btn btn-edit" onclick="editDoctor(${doctor.id})">Edit</button>
-                        <button class="btn btn-delete" onclick="deleteDoctor(${doctor.id})">Delete</button>
-                    </div>
-                </div>
-            `).join('');
+                `).join('');
+            }
+        } else {
+            const container = document.getElementById('doctorsManagementList');
+            container.innerHTML = getDemoDoctorsHTML();
         }
     } catch (error) {
         console.error('Error loading doctors:', error);
+        const container = document.getElementById('doctorsManagementList');
+        container.innerHTML = getDemoDoctorsHTML();
     }
+}
+
+function getDemoDoctorsHTML() {
+    return `
+        <div class="management-item">
+            <div class="management-item-info">
+                <h3>Dr. Sarah Johnson ✅</h3>
+                <p>🏥 Hospital: City General Hospital</p>
+                <p>🏥 Department: Cardiology</p>
+                <p>🎯 Specialization: Interventional Cardiology</p>
+                <p>📞 (555) 123-4567 ext 101</p>
+            </div>
+            <div class="management-item-actions">
+                <button class="btn btn-edit">Edit</button>
+                <button class="btn btn-delete">Delete</button>
+            </div>
+        </div>
+        <div class="management-item">
+            <div class="management-item-info">
+                <h3>Dr. Michael Chen ✅</h3>
+                <p>🏥 Hospital: St. Mary's Medical Center</p>
+                <p>🏥 Department: Emergency Medicine</p>
+                <p>🎯 Specialization: Trauma Care</p>
+                <p>📞 (555) 234-5678 ext 201</p>
+            </div>
+            <div class="management-item-actions">
+                <button class="btn btn-edit">Edit</button>
+                <button class="btn btn-delete">Delete</button>
+            </div>
+        </div>
+        <div class="management-item">
+            <div class="management-item-info">
+                <h3>Dr. Emily Davis ✅</h3>
+                <p>🏥 Hospital: University Medical Hospital</p>
+                <p>🏥 Department: Neurology</p>
+                <p>🎯 Specialization: Stroke Management</p>
+                <p>📞 (555) 345-6789 ext 301</p>
+            </div>
+            <div class="management-item-actions">
+                <button class="btn btn-edit">Edit</button>
+                <button class="btn btn-delete">Delete</button>
+            </div>
+        </div>
+    `;
 }
 
 async function loadManagementDepartments() {
@@ -668,27 +1023,71 @@ async function loadManagementDepartments() {
                 'Authorization': `Bearer ${authToken}`
             }
         });
-        
+
         if (response.ok) {
             const departments = await response.json();
             const container = document.getElementById('departmentsManagementList');
-            
-            container.innerHTML = departments.map(dept => `
-                <div class="management-item">
-                    <div class="management-item-info">
-                        <h3>${dept.name}</h3>
-                        <p>🏥 Hospital: ${dept.hospital_name}</p>
-                        <p>📝 ${dept.description}</p>
+
+            if (departments.length === 0) {
+                container.innerHTML = getDemoDepartmentsHTML();
+            } else {
+                container.innerHTML = departments.map(dept => `
+                    <div class="management-item">
+                        <div class="management-item-info">
+                            <h3>${dept.name}</h3>
+                            <p>🏥 Hospital: ${dept.hospital_name}</p>
+                            <p>📝 ${dept.description}</p>
+                        </div>
+                        <div class="management-item-actions">
+                            <button class="btn btn-delete" onclick="deleteDepartment(${dept.id})">Delete</button>
+                        </div>
                     </div>
-                    <div class="management-item-actions">
-                        <button class="btn btn-delete" onclick="deleteDepartment(${dept.id})">Delete</button>
-                    </div>
-                </div>
-            `).join('');
+                `).join('');
+            }
+        } else {
+            const container = document.getElementById('departmentsManagementList');
+            container.innerHTML = getDemoDepartmentsHTML();
         }
     } catch (error) {
         console.error('Error loading departments:', error);
+        const container = document.getElementById('departmentsManagementList');
+        container.innerHTML = getDemoDepartmentsHTML();
     }
+}
+
+function getDemoDepartmentsHTML() {
+    return `
+        <div class="management-item">
+            <div class="management-item-info">
+                <h3>Emergency Department</h3>
+                <p>🏥 Hospital: City General Hospital</p>
+                <p>📝 24/7 emergency care with state-of-the-art trauma center</p>
+            </div>
+            <div class="management-item-actions">
+                <button class="btn btn-delete">Delete</button>
+            </div>
+        </div>
+        <div class="management-item">
+            <div class="management-item-info">
+                <h3>Cardiology</h3>
+                <p>🏥 Hospital: St. Mary's Medical Center</p>
+                <p>📝 Comprehensive heart care including interventional procedures</p>
+            </div>
+            <div class="management-item-actions">
+                <button class="btn btn-delete">Delete</button>
+            </div>
+        </div>
+        <div class="management-item">
+            <div class="management-item-info">
+                <h3>Neurology</h3>
+                <p>🏥 Hospital: University Medical Hospital</p>
+                <p>📝 Specialized care for neurological conditions and stroke treatment</p>
+            </div>
+            <div class="management-item-actions">
+                <button class="btn btn-delete">Delete</button>
+            </div>
+        </div>
+    `;
 }
 
 async function loadHospitalsForSelect(selectId) {

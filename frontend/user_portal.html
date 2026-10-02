@@ -10,9 +10,9 @@
     <div class="portal-container">
         <header class="portal-header">
             <div class="header-content">
-                <h1>🏥 MedSync</h1>
+                <h1>🏥 MedSync Patient Portal</h1>
                 <div class="header-actions">
-                    <button id="ambulanceBtn" class="btn btn-emergency">🚨 Ambulance</button>
+                    <button id="ambulanceBtn" class="btn btn-emergency">🚨 Emergency</button>
                     <button id="logoutBtn" class="btn btn-secondary">Logout</button>
                 </div>
             </div>
@@ -20,7 +20,7 @@
 
         <main class="portal-main">
             <section class="search-section">
-                <h2>Find Nearby Hospitals</h2>
+                <h2>🔍 Find Nearby Hospitals</h2>
                 <div class="search-bar">
                     <input type="text" id="locationInput" placeholder="Enter your location or allow GPS">
                     <button id="searchBtn" class="btn btn-primary">Search</button>
@@ -29,25 +29,26 @@
             </section>
 
             <section class="hospitals-section">
-                <h2>Nearby Hospitals</h2>
+                <h2>🏥 Available Hospitals</h2>
                 <div id="hospitalsList" class="hospitals-grid">
                     <!-- Hospitals will be loaded here -->
                 </div>
             </section>
 
             <section class="ai-section">
-                <h2>AI Symptom Analysis (RAG-Powered)</h2>
+                <h2>🧠 AI Symptom Analysis</h2>
+                <p style="color: var(--secondary); margin-bottom: 1.5rem;">Describe your symptoms and our AI-powered RAG system will provide intelligent recommendations</p>
                 <div class="ai-container">
                     <div class="voice-input">
-                        <button id="voiceBtn" class="btn btn-voice">🎤 Describe Your Symptoms</button>
+                        <button id="voiceBtn" class="btn btn-voice">🎤 Voice Input</button>
                         <p id="voiceStatus">Click to start voice input</p>
                     </div>
                     <div class="text-input">
-                        <textarea id="symptomText" placeholder="Or type your symptoms here..."></textarea>
+                        <textarea id="symptomText" placeholder="Describe your symptoms here... (e.g., 'I have chest pain and shortness of breath')"></textarea>
                         <div class="ai-options">
                             <label>
                                 <input type="checkbox" id="useRag" checked>
-                                Use RAG System (Recommended)
+                                Enable RAG System for enhanced accuracy
                             </label>
                         </div>
                         <button id="analyzeBtn" class="btn btn-primary">Analyze Symptoms</button>
@@ -57,17 +58,17 @@
                     </div>
                 </div>
             </section>
-            
+
             <section class="rag-info-section">
-                <h2>🧠 About Our RAG System</h2>
+                <h2>🧠 About Our AI System</h2>
                 <div class="rag-info">
-                    <p>Our <strong>Retrieval-Augmented Generation (RAG)</strong> system uses advanced AI to provide accurate medical insights:</p>
+                    <p>Our <strong>Retrieval-Augmented Generation (RAG)</strong> system leverages advanced AI to provide accurate, evidence-based medical insights:</p>
                     <ul>
-                        <li>📚 <strong>Vector Database:</strong> Searches through comprehensive medical knowledge base</li>
-                        <li>🎯 <strong>Semantic Search:</strong> Understands context and meaning, not just keywords</li>
-                        <li>🔬 <strong>Evidence-Based:</strong> Provides analysis backed by medical literature</li>
-                        <li>⚡ <strong>Real-Time:</strong> Instant analysis with confidence scores</li>
-                        <li>🏥 <strong>Department Matching:</strong> Intelligently recommends appropriate medical specialists</li>
+                        <li>📚 <strong>Comprehensive Knowledge Base:</strong> Access to extensive medical literature and research</li>
+                        <li>🎯 <strong>Semantic Understanding:</strong> Understands context and meaning beyond simple keywords</li>
+                        <li>🔬 <strong>Evidence-Based Analysis:</strong> Recommendations backed by verified medical sources</li>
+                        <li>⚡ <strong>Real-Time Processing:</strong> Instant analysis with confidence scoring</li>
+                        <li>🏥 <strong>Smart Department Matching:</strong> Intelligently routes you to appropriate specialists</li>
                     </ul>
                 </div>
             </section>

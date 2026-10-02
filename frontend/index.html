@@ -9,43 +9,87 @@
 <body>
     <!-- Navigation Header -->
     <header class="landing-header">
+        <div class="header-particles">
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+        </div>
         <div class="header-content">
             <div class="logo">
-                <h1>🏥 MedSync</h1>
-                <p>AI-Powered Hospital Management</p>
+                <div class="logo-icon">🏥</div>
+                <div class="logo-reflection"></div>
+                <div class="logo-text">
+                    <h1>MedSync</h1>
+                    <p>AI-Powered Healthcare</p>
+                </div>
             </div>
             <nav class="nav-buttons">
                 <button id="loginBtn" class="btn btn-secondary">Login</button>
-                <button id="registerBtn" class="btn btn-primary">Register</button>
+                <button id="registerBtn" class="btn btn-primary">Get Started</button>
             </nav>
         </div>
     </header>
 
     <!-- Hero Section -->
     <section class="hero-section">
-        <div class="hero-content">
-            <h2>Revolutionizing Healthcare with AI</h2>
-            <p>MedSync is an intelligent hospital management system that connects patients with healthcare providers using advanced AI technology.</p>
-            <div class="hero-buttons">
-                <button id="heroLoginBtn" class="btn btn-primary">Get Started</button>
-                <button id="learnMoreBtn" class="btn btn-secondary">Learn More</button>
+        <div class="hero-container">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <span>✨</span>
+                    <span>AI-Powered Healthcare Platform</span>
+                </div>
+                <h2>The Future of Healthcare is Here</h2>
+                <p>Experience AI-powered hospital management that connects patients with healthcare providers instantly. Real-time data, intelligent analysis, and seamless care coordination at your fingertips.</p>
+                <div class="hero-buttons">
+                    <button id="heroLoginBtn" class="btn btn-primary">Start Your Journey</button>
+                    <button id="learnMoreBtn" class="btn btn-secondary">Explore Features</button>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <div class="hero-card">
+                    <div class="hero-stats">
+                        <div class="stat-item">
+                            <div class="stat-number">500+</div>
+                            <div class="stat-label">Hospitals</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">10K+</div>
+                            <div class="stat-label">Doctors</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">50K+</div>
+                            <div class="stat-label">Patients</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">99.9%</div>
+                            <div class="stat-label">Uptime</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="hero-features">
             <div class="feature-card">
                 <div class="feature-icon">🧠</div>
                 <h3>AI-Powered Analysis</h3>
-                <p>Advanced RAG system for accurate symptom analysis and medical recommendations</p>
+                <p>Advanced RAG system for accurate symptom analysis and medical recommendations backed by medical literature</p>
             </div>
             <div class="feature-card">
                 <div class="feature-icon">🏥</div>
                 <h3>Real-Time Hospital Data</h3>
-                <p>Live bed availability, doctor schedules, and emergency services</p>
+                <p>Live bed availability, doctor schedules, and emergency services updated in real-time</p>
             </div>
             <div class="feature-card">
                 <div class="feature-icon">🚑</div>
                 <h3>Emergency Response</h3>
-                <p>Instant ambulance booking and emergency department connections</p>
+                <p>Instant ambulance booking and emergency department connections when you need them most</p>
             </div>
         </div>
     </section>
@@ -136,20 +180,31 @@
         <div class="modal-content">
             <span class="close">&times;</span>
             <div class="auth-form">
-                <h2>Login to MedSync</h2>
+                <div class="auth-icon">🏥</div>
+                <h2>Welcome Back</h2>
+                <p>Sign in to access your healthcare dashboard</p>
                 <form id="loginForm">
                     <div class="form-group">
-                        <label for="email">Email</label>
+                        <label for="email">Email Address</label>
                         <input type="email" id="email" name="email" required placeholder="Enter your email">
                     </div>
                     <div class="form-group">
                         <label for="password">Password</label>
                         <input type="password" id="password" name="password" required placeholder="Enter your password">
                     </div>
-                    <button type="submit" class="btn btn-primary">Login</button>
+                    <button type="submit" class="btn btn-primary">Sign In</button>
                 </form>
                 <div class="auth-switch">
-                    <p>Don't have an account? <a href="#" id="switchToRegister">Register</a></p>
+                    <p>New to MedSync? <a href="#" id="switchToRegister">Create an account</a></p>
+                </div>
+                <div class="demo-credentials">
+                    <h3>Quick Demo Access</h3>
+                    <div class="credential-box">
+                        <p><strong>Patient:</strong> user@medsync.com / user123</p>
+                    </div>
+                    <div class="credential-box">
+                        <p><strong>Hospital Staff:</strong> hospital@medsync.com / hospital123</p>
+                    </div>
                 </div>
                 <div id="errorMessage" class="error-message"></div>
             </div>
@@ -161,15 +216,17 @@
         <div class="modal-content">
             <span class="close">&times;</span>
             <div class="auth-form">
-                <h2>Register for MedSync</h2>
+                <div class="auth-icon">✨</div>
+                <h2>Create Your Account</h2>
+                <p>Join MedSync and experience smarter healthcare</p>
                 <form id="registerForm">
                     <div class="form-group">
-                        <label for="regEmail">Email</label>
+                        <label for="regEmail">Email Address</label>
                         <input type="email" id="regEmail" name="email" required placeholder="Enter your email">
                     </div>
                     <div class="form-group">
                         <label for="regPassword">Password</label>
-                        <input type="password" id="regPassword" name="password" required placeholder="Create a password">
+                        <input type="password" id="regPassword" name="password" required placeholder="Create a password (min 6 characters)">
                     </div>
                     <div class="form-group">
                         <label for="regConfirmPassword">Confirm Password</label>
@@ -182,10 +239,10 @@
                             <option value="hospital">Hospital Staff</option>
                         </select>
                     </div>
-                    <button type="submit" class="btn btn-primary">Register</button>
+                    <button type="submit" class="btn btn-primary">Create Account</button>
                 </form>
                 <div class="auth-switch">
-                    <p>Already have an account? <a href="#" id="switchToLogin">Login</a></p>
+                    <p>Already have an account? <a href="#" id="switchToLogin">Sign in</a></p>
                 </div>
                 <div id="registerMessage" class="error-message"></div>
             </div>

@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     POSTGRES_DB: Optional[str] = Field(default="medsync", env="POSTGRES_DB")
     
     # CORS
-    CORS_ORIGINS: str = Field(default="http://localhost:3000,http://127.0.0.1:3000", env="CORS_ORIGINS")
+    CORS_ORIGINS: str = Field(default="http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001", env="CORS_ORIGINS")
     
     # RAG System
     ENABLE_RAG: bool = Field(default=True, env="ENABLE_RAG")
